@@ -1,0 +1,135 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+property = read.csv("R Programming/DOF__Condominium.csv")
+property
+```
+**Multivariate**
+**Estimated Gross Income,Full Market Value & Estimated Expense **
+**Estimated Gross Income= 0.59203 * Full Market Value  + 0.41266 Estimated Expense - 0.5288**
+**It means Estimated Gross Income increases 0.59 times of Full Market Value and 0.41 times of Estimated Expense. This multivariate is showing positive relation with 99% Multiple R Sqaured**
+
+```{r}
+mymodel = lm(Estimated.Gross.Income~Full.Market.Value+Estimated.Expense, data = property)
+summary(mymodel)
+
+```
+**Scatter Plot showing multivariate relationship between Estimated Gross Income,Full Market Value & Estimated Expense**
+
+```{r}
+ggplot(property)+geom_jitter(aes(x= log(Full.Market.Value+Estimated.Expense), y= log(Estimated.Gross.Income)))+geom_smooth(aes(x= log(Full.Market.Value+Estimated.Expense), y= log(Estimated.Gross.Income)), method ='lm', fill =NA)
+```
+
+
+**Liner corelation between Gross Square Feet & Full Market values**
+**As the Gross Squre feet increases by log of 1 sqr.ft, the full market value also increases by log of 2.244e+02 dollar**
+```{r}
+ggplot(property)+geom_jitter(aes(x= log(Gross.SqFt), y= log(Full.Market.Value)))+geom_smooth(aes(x= log(Gross.SqFt), y= log(Full.Market.Value)), method ='lm', fill =NA)
+```
+
+**Liner corelation between Gross Square Feet & Full Market values**
+** Equation: Full Market vaue = 2.244e+02 * Gross SquareFeet -2.400e+06 **
+
+```{r}
+mymodel = lm(Full.Market.Value~Gross.SqFt, data = property)
+summary(mymodel)
+```
+**Replacing null values with mean values of the variable**
+```{r}
+property = mutate(property, Full.Market.Value = ifelse(is.na(Full.Market.Value), yes = mean(Full.Market.Value), no = Full.Market.Value))
+
+property = mutate(property, Gross.SqFt = ifelse(is.na(Gross.SqFt), yes = mean(Gross.SqFt), no = Gross.SqFt))
+
+```
+
+**Leveraging the above equation for Knn**
+**Step 1: Normalizing the values & defining input variables & label **
+```{r}
+input_variables = subset(property,select=c(Gross.SqFt,Full.Market.Value))
+
+n_input_variables = sapply(input_variables, function(x){(x-min(x))/(max(x)-min(x))})
+
+label = property$Building.Classification
+
+input_n = data.frame(round(n_input_variables,2))
+input_n
+
+
+```
+
+**knn**
+**Model is abl to predict 85%(0.846) values correctly with the value of k = 5**
+```{r}
+set.seed(3635)
+indices = sample(1:2, nrow(property), replace = T, prob = c(.8,.2))
+training_input = input_n[indices==1,]
+testing_input = input_n[indices == 2,]
+
+training_label = label[indices==1]
+testing_label = label[indices ==2]
+
+#for(i in 1:80){
+
+predictions = knn(train = training_input, test = testing_input, cl = training_label, k= 5)
+
+p = sum(predictions == testing_label)/length(testing_label)
+p
+#print(str(i) + str(p))
+#}
+```
+
+**Testing label had 1 R2-CONDOMINIUM value, model was not able to predict that correctly**
+**Testing label had 33 R4-CONDOMINIUM values, model was able to predict all correctly**
+**Testing label had 5 R9-CONDOMINIUM values, model was not able to predict none correctly**
+
+```{r}
+table(predictions, testing_label)
+```
+```{r}
+table(testing_label)
+```
+```{r}
+table(predictions)
+```
+```{r}
+#library(caret)
+confusionMatrix(table(predictions, testing_label))
+
+```
+
+
+**Adding a categorical variable to the model- Neigbouhood**
+```{r}
+class_dummies = model.matrix(~Neighborhood -1, data = property)
+```
+```{r}
+input_n_with_class = data.frame(input_n,class_dummies)
+input_n_with_class
+```
+
+**Knn with categorical variable **
+**Model is abl to predict 76%(0.775) values correctly with the value of k = 5**
+```{r}
+set.seed(1234)
+indices = sample(1:2,nrow(property), replace = T, prob=c(.8, .2) )
+
+training_input = input_n_with_class[indices == 1,]
+testing_input = input_n_with_class[indices == 2,]
+
+training_label = label[indices==1]
+testing_label = label[indices ==2]
+```
+```{r}
+set.seed(12222)
+predictions = knn(train = training_input, test = testing_input, cl = training_label, k= 5)
+sum(predictions == testing_label)/length(testing_label)
+table(predictions, testing_label)
+```
+```{r}
+
+confusionMatrix(table(predictions, testing_label))
+```
+
