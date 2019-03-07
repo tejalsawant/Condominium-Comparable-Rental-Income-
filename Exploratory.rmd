@@ -1,0 +1,122 @@
+```{r}
+property = read.csv("R Programming/DOF__Condominium.csv")
+property
+```
+
+```{r}
+ggplot(data = property)+geom_bar(aes(x=property$Building.Classification, fill = factor(property$Gross.Income.per.SqFt)))
+```
+```{r}
+ggplot(property, aes(x=Neighborhood, y=Gross.Income.per.SqFt, color =Neighborhood ))  + 
+  geom_boxplot()
+```
+
+
+```{r}
+#require(lattice)
+histogram(~Market.Value.per.SqFt|Neighborhood,data =property)
+```
+```{r}
+histogram(~Market.Value.per.SqFt|C2Neighborhood,data =property)
+```
+
+```{r}
+histogram(property$Market.Value.per.SqFt)
+
+```
+```{r}
+mean(property$Market.Value.per.SqFt)
+median(property$Market.Value.per.SqFt)
+quantile(property$Market.Value.per.SqFt)
+#data is slightly right skewed
+#There are clear outliners: 43.38 & 399
+#most other values are in the range of 147 to 209
+```
+```{r}
+property = mutate(property, RateSqFtRate = ifelse(property$Market.Value.per.SqFt>43.38 & property$Market.Value.per.SqFt< 147.47 , yes = "Low", no = ""))
+
+propery =mutate(property, RateSqFtRate = ifelse(property$Market.Value.per.SqFt> 147.47 & property$Market.Value.per.SqFt< 209.03 & property$RateSqFtRate!="Low" , yes = "Medium", no = RateSqFtRate))
+
+#mutate(property, RateSqFtRate = ifelse(property$Market.Value.per.SqFt> 209.03, yes = "High", no =RateSqFtRate))
+
+```
+```{r}
+property$RateSqFtRate
+```
+
+```{r}
+financeD = subset(property, property$Neighborhood == "FINANCIAL")
+financeD
+
+financeC1 = subset(property, property$C1..Neighborhood == "FINANCIAL")
+financeC1
+
+```
+
+```{r}
+
+histogram(~financeD$Market.Value.per.SqFt|financeD$Year.Built, data = financeD)
+```
+
+```{r}
+mean(financeD$Market.Value.per.SqFt)
+median(financeD$Market.Value.per.SqFt)
+quantile(financeD$Market.Value.per.SqFt)
+# within the same neighbourhood there is a massive difference in the per sqr feet rates
+```
+
+```{r}
+hist(table(financeD$Market.Value.per.SqFt,financeD$Year.Built))
+```
+
+
+```{r}
+hist(financeD$Year.Built)
+```
+```{r}
+
+ggplot(data = financeD)+geom_histogram(aes(x = Market.Value.per.SqFt, fill = factor(Year.Built) ))
+#histogram shows that the older buildings are more expensive
+```
+```{r}
+buildyear = subset(financeD, Year.Built> 1836 & Year.Built<1956)
+buildyear
+```
+```{r}
+#compareRates
+
+ggplot(data=head(buildyear))+geom_bar(aes(x=Market.Value.per.SqFt,fill=factor(C1..Market.Value.per.SqFt)),beside =TRUE)
+```
+
+```{r}
+mutate(financeD, diffC1 =( financeD$Market.Value.per.SqFt- financeD$C1..Market.Value.per.SqFt), C1Compare =  ifelse(financeD$Market.Value.per.SqFt>financeD$C1..Market.Value.per.SqFt, yes = 1, no =0 ))
+normaliseRates
+
+```
+
+```{r}
+filter(financeD,financeD$diffC1 = -315)
+```
+
+```{r}
+
+
+financeD$diffC1
+```
+```{r}
+yearBuilt = group_by(financeD, financeD$Year.Built,na.rm = TRUE)
+tbl = summarise(yearBuilt, average_price = mean(financeD$Market.Value.per.SqFt, na.rm = TRUE))
+Report = tbl
+Report
+```
+
+```{r}
+yearBuilt1 = group_by(property, Year.Built)
+#yearBuilt1
+tbl = summarise(yearBuilt1, average_price = mean(Gross.Income.per.SqFt))
+tbl
+```
+```{r}
+summary(property$Year.Built)
+```
+
